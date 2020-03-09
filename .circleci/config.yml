@@ -1,0 +1,145 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+
+defaults: &defaults
+    docker:
+      - image: circleci/python:3.6.1
+    working_directory: ~/project
+    environment:
+      TF_IN_AUTOMATION: true
+
+tf-install: &tf-install
+  run:
+    name: tf-install
+    command: |
+      wget https://releases.hashicorp.com/terraform/0.12.20/terraform_0.12.20_linux_amd64.zip
+      sudo unzip terraform_0.12.20_linux_amd64.zip -d /usr/bin
+      rm terraform_0.12.20_linux_amd64.zip
+      terraform --version
+
+jobs:
+  regula:
+    <<: *defaults
+    steps:
+      - checkout
+      - *tf-install
+      - run:
+          name: regula-install
+          command: |
+            wget -O regula.tar.gz https://github.com/fugue/regula/archive/v0.2.0.tar.gz
+            sudo mkdir -p /opt/regula
+            sudo tar -xf regula.tar.gz --strip-components=1 -C /opt/regula
+            rm regula.tar.gz
+      - run:
+          name: opa-install
+          command: |
+            wget -O opa https://github.com/open-policy-agent/opa/releases/download/v0.15.1/opa_linux_amd64
+            chmod +x opa
+            sudo mkdir -p /usr/local/bin
+            sudo mv opa /usr/local/bin
+      - run:
+          name: conftest-install
+          command: |
+            wget https://github.com/instrumenta/conftest/releases/download/v0.17.1/conftest_0.17.1_Linux_x86_64.tar.gz
+            tar xzf conftest_0.17.1_Linux_x86_64.tar.gz
+            sudo mv conftest /usr/local/bin
+            rm conftest_0.17.1_Linux_x86_64.tar.gz
+      - run:
+          name: conftest-pull
+          command: |
+            conftest pull -p policy/ github.com/fugue/regula/conftest
+            conftest pull -p policy/regula/lib github.com/fugue/regula/lib
+            conftest pull -p policy/regula/rules github.com/fugue/regula/rules
+      - run:
+          name: regula-check
+          command: |
+            set -e
+            bash ~/project/regula-check.sh
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
+  terraform-init:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - *tf-install
+      - run:
+          name: init
+          command: terraform init -input=false
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
+  terraform-plan:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - *tf-install
+      - run:
+         name: plan
+         command: terraform plan -out=plan.tfplan -input=false
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
+  terraform-apply-approval:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - *tf-install
+      - run:
+         name: apply
+         command: |
+           # Uncomment the line below to allow CircleCI to apply the Terraform
+           # terraform apply -input=false -auto-approve plan.tfplan
+           echo Uncomment line 104 of config.yml to let CircleCI apply the Terraform
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
+  scan:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+         name: scan-env
+         command: |
+           set -e
+           bash ./scan.sh
+         
+workflows:
+   version: 2
+   install-and-check-env:
+     jobs:
+        - regula
+        - terraform-init:
+           requires:
+             - regula
+           filters:
+             branches:
+               only: master
+        - terraform-plan:
+           requires:
+             - terraform-init
+        - hold-for-approval:
+           type: approval
+           requires:
+             - terraform-plan
+        - terraform-apply-approval:
+           requires:
+             - hold-for-approval
+        - scan:
+           requires:
+             - terraform-apply-approval
