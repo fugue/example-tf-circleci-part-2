@@ -18,7 +18,7 @@
 	- [Step 6 (optional): Bring Terraform into compliance](#step-6-optional-bring-terraform-into-compliance)
 - [What's Next?](#whats-next)
 
-In [part 1 of this walkthrough](https://www.fugue.co/blog/blog-ci/cd-with-fugue-terraform-github-circleci), we set up a CI/CD pipeline to define, commit, deploy, and secure infrastructure as code. To recap, here are the components:
+In [part 1 of this walkthrough](https://github.com/fugue/example-tf-circleci), we set up a CI/CD pipeline to define, commit, deploy, and secure infrastructure as code. To recap, here are the components:
 
 - [Amazon Web Services](https://aws.amazon.com/) (AWS): Provide cloud infrastructure (a VPC and security group)
 - [Terraform](https://www.terraform.io/): Define infrastructure as code
@@ -63,7 +63,7 @@ If you'd like a sneak peek at the new files and what they do, jump ahead to [ste
 
 ### Step 1: Download example repo ZIP
 
-Once again, we've conveniently created a GitHub repo with all the code you need. [Download the ZIP here.](https://github.com/fugue/example-tf-circleci-part-2/archive/master.zip)
+Once again, we've conveniently created a GitHub repo (this one!) with all the code you need. [Download the ZIP here.](https://github.com/fugue/example-tf-circleci-part-2/archive/master.zip)
 
 ### Step 2: Copy files into your repo
 
@@ -73,7 +73,7 @@ Unzip the archive and copy the following files into the root of the repo you set
 cp -R .circleci main.tf regula-check.sh staging ../path-to-your-repo
 ```
 
-We'll go over what each file does shortly in step 3a.
+We'll go over what each file does shortly in [step 3a](#step-3a-understand-the-pipeline).
 
 ### Step 3: Uncomment `terraform apply` step
 
@@ -91,15 +91,15 @@ Our CircleCI workflow has a new job, `regula`. The job does a few different thin
 
 - [Checks out the repo](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L27)
 - Installs several binaries:
-   - [Terraform](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
+   - [Terraform](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L14-L21)
    - [Regula](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30-L35)
-   - [OPA](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
-   - [Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
-- [Pulls the Regula lib, rules, and Conftest integration into Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
-- [Runs Regula](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
-- [Persists the files to the next job](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30)
+   - [OPA](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L36-L42)
+   - [Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L43-L49)
+- [Pulls the Regula lib, rules, and Conftest integration into Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L50-L55)
+- [Runs Regula](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L56-L60)
+- [Persists the files to the next job](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L61-L64)
 
-Here's where the cool stuff happens. Regula checks all of the Terraform projects in directories specified in `regula-check.sh`, evaluating each one for compliance with a [library of rules](https://github.com/fugue/regula#rule-library).
+Here's where the cool stuff happens. Regula checks all of the Terraform projects in directories specified in [`regula-check.sh`](#regula-checksh), evaluating each one for compliance with a [library of rules](https://github.com/fugue/regula#rule-library).
 
 Then, one of the following things happens:
 
@@ -108,7 +108,7 @@ Then, one of the following things happens:
 
 Because Regula uses [Conftest](https://github.com/instrumenta/conftest/) to run the tests, we can validate multiple files at once, and we end up with some nicely formatted output. (You can see for yourself in [step 5](#step-5-watch-the-cicd-magic)!)
 
-We've also modified the [`workflows`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30) section of `config.yml`. This time, [`regula`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30) is the first step, and the next step, [`terraform-init`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30), only happens if `regula` passes.
+We've also modified the [`workflows`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L122) section of `config.yml`. This time, [`regula`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L126) is the first step, and the next step, [`terraform-init`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L127-L132), only happens if `regula` passes.
 
 Another change is that the `regula` job happens on _every_ pushed commit. The rest of the pipeline, from deployment to scan, only happens on commits to `master`. The reason we've configured CircleCI to run Regula on every commit is in order to provide earlier notice in case someone has pushed noncompliant Terraform. This way, you'll get the benefit of Regula's pre-deployment checks and be alerted to compliance violations long before merging PRs into `master` and triggering deployment.
 
@@ -143,7 +143,7 @@ View the Rego policy for CIS AWS 1-22 [in the Regula repo](https://github.com/fu
 
 #### What's the deal with the backend?
 
-Due to a [Terraform bug](https://github.com/hashicorp/terraform/issues/21989), it's impossible to create a Terraform plan without first running `terraform init`. And when `terraform init` is executed, Terraform detects `backend.tf` and determines that it requires backend reinitialization. This is not ideal here because it involves setting up the backend configuration again, copying existing state, and so on. We only need to generate a plan for Regula, so unsetting and resetting the S3 backend is unnecessary and undesirable.
+Due to a [Terraform bug](https://github.com/hashicorp/terraform/issues/21989), it's impossible to output a Terraform plan in JSON without first running `terraform init`. And when `terraform init` is executed, Terraform detects `backend.tf` and determines that it requires backend reinitialization. This is not ideal here because it involves setting up the backend configuration again, copying existing state, and so on. We only need to generate a plan for Regula, so unsetting and resetting the S3 backend is unnecessary and undesirable.
 
 For this reason, we rename `backend.tf` to `backend.tf.backup` in the directories we run Regula in, and when we're done, we return it to the original name. This allows us to simply generate a plan and validate it without affecting the backend.
 
