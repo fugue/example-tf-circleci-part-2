@@ -6,7 +6,7 @@ resource "aws_vpc" "my_fugue_cicd_vpc" {
   cidr_block = "10.0.0.0/16"
   
   tags = {
-    Name = "my-fugue-cicd-vpc-1"
+    Name = "my-fugue-cicd-vpc"
   }
 }
 
