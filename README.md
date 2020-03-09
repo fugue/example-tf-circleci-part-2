@@ -28,9 +28,9 @@ In [part 1 of this walkthrough](https://github.com/fugue/example-tf-circleci), w
 
 Here, in part 2, we'll add a new component to the front of the pipeline:
 
-- [Regula](https://github.com/fugue/regula): Evaluate Terraform infrastructure as code for compliance
+- [Regula](https://github.com/fugue/regula): Evaluate Terraform infrastructure-as-code for compliance
 
-Our open source tool [Regula](https://github.com/fugue/regula) uses the [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) engine to check Terraform plans against a library of compliance policies. These policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/), OPA's query language.
+Our open source tool [Regula](https://github.com/fugue/regula) uses the [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) engine to check Terraform plans against a library of compliance policies. The policy-as-code is written in [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/), OPA's query language.
 
 With the addition of Regula, the pipeline demonstrates end-to-end security and compliance. Regula validates resource configuration pre-deployment and Fugue ensures it stays compliant post-deployment.
 
