@@ -25,7 +25,7 @@ EOF
 resource "aws_iam_policy" "basically_deny_all" {
   name        = "some_policy"
   path        = "/"
-  description = "Some policy with a long description that denies anything"
+  description = "Some policy with a long description that denies everything"
 
   policy = <<EOF
 {
