@@ -51,7 +51,7 @@ jobs:
           name: conftest-pull
           command: |
             conftest pull -p policy/ github.com/fugue/regula/conftest
-            conftest pull -p policy/regula/lib github.com/fugue/regula/lib
+            conftest pull -p policy/regula/lib 'github.com/fugue/regula//lib?ref=v0.5.0'
             conftest pull -p policy/regula/rules github.com/fugue/regula/rules
       - run:
           name: regula-check
