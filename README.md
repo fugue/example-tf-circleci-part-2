@@ -17,6 +17,7 @@
 	- [Step 5: Watch the CI/CD magic!](#step-5-watch-the-cicd-magic)
 	- [Step 6 (optional): Bring Terraform into compliance](#step-6-optional-bring-terraform-into-compliance)
 - [What's Next?](#whats-next)
+- [Alternate Configuration Without Conftest](#alternate-configuration-without-conftest)
 
 In [part 1 of this walkthrough](https://github.com/fugue/example-tf-circleci), we set up a CI/CD pipeline to define, commit, deploy, and secure infrastructure as code. To recap, here are the components:
 
@@ -38,6 +39,8 @@ We'll also implement an open source utility called [Conftest](https://github.com
 
 - Easy CI integration and policy retrieval from Conftest
 - Terraform plan parsing and the rule set from Regula
+
+(For a version of this example that does not use Conftest, see [Alternate Configuration Without Conftest](#alternate-configuration-without-conftest).)
 
 ## Getting Started
 
@@ -77,7 +80,7 @@ We'll go over what each file does shortly in [step 3a](#step-3a-understand-the-p
 
 ### Step 3: Uncomment `terraform apply` step
 
-**Action recommended (but not required)!** We've commented out the `terraform apply` step in `.circleci/config.yml` again just to be on the safe side, because this example *will deploy infrastructure* into your account (a VPC, security group, and if you follow step 6 later, the resources listed [here](#maintf-root)). Feel free to comment it back in when you're comfortable doing so -- it's [line 104](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L104) this time. 
+**Action recommended (but not required)!** We've commented out the `terraform apply` step in `.circleci/config.yml` again just to be on the safe side, because this example *will deploy infrastructure* into your account (a VPC, security group, and if you follow step 6 later, the resources listed [here](#maintf-root)). Feel free to comment it back in when you're comfortable doing so -- it's [line 97](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L97) this time. (If you're using the no-Conftest [alternate configuration](#alternate-configuration-without-conftest), it's [line 91](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config-no-conftest.backup#L91).)
 
 If you'd rather, however, you can keep the line commented out -- it's not strictly necessary for the walkthrough, since we're focusing on the Regula part of the pipeline. Just note that you'll really get the full effect of the pipeline when CircleCI deploys your updated infrastructure and Fugue scans it in context with other resources in the environment.
 
@@ -92,23 +95,22 @@ Our CircleCI workflow has a new job, `regula`. The job does a few different thin
 - [Checks out the repo](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L27)
 - Installs several binaries:
    - [Terraform](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L14-L21)
-   - [Regula](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L30-L35)
-   - [OPA](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L36-L42)
-   - [Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L43-L49)
-- [Pulls the Regula lib, rules, and Conftest integration into Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L50-L55)
-- [Runs Regula](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L56-L60)
-- [Persists the files to the next job](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L61-L64)
+   - [OPA](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L29-L35)
+   - [Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L36-L42)
+- [Pulls the Regula lib, rules, and Conftest integration into Conftest](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L43-L48)
+- [Runs the Conftest/Regula script](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L49-L53)
+- [Persists the files to the next job](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L54-L57)
 
-Here's where the cool stuff happens. Regula checks all of the Terraform projects in directories specified in [`regula-check.sh`](#regula-checksh), evaluating each one for compliance with a [library of rules](https://github.com/fugue/regula#rule-library).
+Here's where the cool stuff happens. The Conftest/Regula script uses Conftest with Regula's integration to check all of the Terraform projects in directories specified in [`regula-check.sh`](#regula-checksh), evaluating each one for compliance with Regula's [library of rules](https://github.com/fugue/regula#rule-library).
 
 Then, one of the following things happens:
 
 - If the Terraform configuration files pass the compliance rules in Regula's library, the build continues to the next step, ultimately allowing Terraform to deploy the infrastructure, and Fugue to scan your environment and set a baseline.
 - If Regula finds any compliance violations, the build fails. No Terraform is deployed, and Fugue does not scan the environment or update the baseline.
 
-Because Regula uses [Conftest](https://github.com/instrumenta/conftest/) to run the tests, we can validate multiple files at once, and we end up with some nicely formatted output. (You can see for yourself in [step 5](#step-5-watch-the-cicd-magic)!)
+Because we use [Conftest](https://github.com/instrumenta/conftest/) to run the tests against Regula's library, we can validate multiple files at once, and we end up with some nicely formatted output. (You can see for yourself in [step 5](#step-5-watch-the-cicd-magic)!)
 
-We've also modified the [`workflows`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L122) section of `config.yml`. This time, [`regula`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L126) is the first step, and the next step, [`terraform-init`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L127-L132), only happens if `regula` passes.
+We've also modified the [`workflows`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L115) section of `config.yml`. This time, [`regula`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L119) is the first step, and the next step, [`terraform-init`](https://github.com/fugue/example-tf-circleci-part-2/blob/master/.circleci/config.yml#L120-L125), only happens if `regula` passes.
 
 Another change is that the `regula` job happens on _every_ pushed commit. The rest of the pipeline, from deployment to scan, only happens on commits to `master`. The reason we've configured CircleCI to run Regula on every commit is in order to provide earlier notice in case someone has pushed noncompliant Terraform. This way, you'll get the benefit of Regula's pre-deployment checks and be alerted to compliance violations long before merging PRs into `master` and triggering deployment.
 
@@ -121,7 +123,7 @@ We've added a script, [`regula-check.sh`](https://github.com/fugue/example-tf-ci
 - [Temporarily renames the `backend.tf` file](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check.sh#L29-L30) (see [note](#whats-the-deal-with-the-backend))
 - [Generates a JSON plan for each Terraform project](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check.sh#L35-L38)
 - [Returns the backend file to its original name](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check.sh#L40-L41)
-- [Runs Conftest, which runs Regula on all JSON plans](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check.sh#L45-L47)
+- [Runs Conftest, which uses Regula to check all JSON plans](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check.sh#L45-L47)
 
 #### [main.tf (root)](https://github.com/fugue/example-tf-circleci-part-2/blob/master/main.tf)
 
@@ -241,3 +243,27 @@ Don't forget -- if you'd like to sign up for a free Enterprise trial, or a free-
 Developer account, [register here](https://riskmanager.fugue.co/register).
 
 Finally, for more about Fugue, see the [Fugue docs](https://docs.fugue.co) and [fugue.co](https://www.fugue.co).
+
+## Alternate Configuration Without Conftest
+
+If you'd prefer to use a CircleCI configuration that does not involve Conftest, rename both configurations in the .circleci folder and commit the changes:
+
+```
+git mv .circleci/config.yml .circleci/config-with-conftest.backup
+git mv .circleci/config-no-conftest.backup .circleci/config.yml
+git commit -m "Switch to non-Conftest version of CircleCI config"
+```
+
+This renames the configuration files so CircleCI uses the no-Conftest version whenever a commit is pushed to `master`, and ignores the Conftest version.
+
+The no-Conftest version uses the script [regula-check-no-conftest.sh](https://github.com/fugue/example-tf-circleci-part-2/blob/master/regula-check-no-conftest.sh). Instead of using Conftest to pull in the Regula library and then check the Terraform, the script uses only Regula to check the Terraform. The script also parses the results with [jq](https://stedolan.github.io/jq/) to get Conftest-like human-readable output.
+
+The output looks slightly different but the effect is the same -- you'll still see a failed build if there are compliance violations in your Terraform, and if there aren't, your build succeeds.
+
+Here's an example of how the CircleCI build looks when Regula detects compliance violations:
+
+![Failing job - no Conftest](docs/cicd-failed-job-no-conftest.png)
+
+And here's how it looks when no violations are detected:
+
+![Passing job - no Conftest](docs/cicd-passed-job-no-conftest.png)
