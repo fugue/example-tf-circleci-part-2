@@ -1,6 +1,6 @@
 # CI/CD with Fugue, Terraform, GitHub, CircleCI: Part 2
 
-![Regula + Fugue = <3](docs/cicd-header.png) 
+![Regula + Fugue = <3](docs/cicd-failed-job.png)
 
 - [Getting Started](#getting-started)
 - [Steps](#steps)
@@ -180,12 +180,10 @@ If you view the job results, you'll see the following error message:
 ![Failed job](docs/cicd-failed-job.png)
 
 ```bash
-FAIL - regula-plan-project.json - regula: rule vpc_flow_log failed for resource aws_vpc.my_fugue_cicd_vpc
-FAIL - regula-plan-staging.json - regula: rule iam_admin_policy failed for resource aws_iam_policy.basically_allow_all
---------------------------------------------------------------------------------
-PASS: 1/3
-WARN: 0/3
-FAIL: 2/3
+FAIL - regula-plan-project.json - main - regula: tf_aws_vpc_flow_log: aws_vpc.my_fugue_cicd_vpc: VPC flow logging should be enabled
+FAIL - regula-plan-staging.json - main - regula: tf_aws_iam_admin_policy: aws_iam_policy.basically_allow_all: IAM policies should not have full "*:*" administrative privileges
+
+3 tests, 1 passed, 0 warnings, 2 failures, 0 exceptions
 
 Exited with code exit status 1
 ```
@@ -220,9 +218,7 @@ When you view the job results, you'll see the following message:
 ![Passing job](docs/cicd-passed-job.png)
 
 ```bash
-PASS: 3/3
-WARN: 0/3
-FAIL: 0/3
+3 tests, 3 passed, 0 warnings, 0 failures, 0 exceptions
 
 CircleCI received exit code 0
 ```
