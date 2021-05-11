@@ -29,23 +29,23 @@ jobs:
       - run:
           name: opa-install
           command: |
-            wget -O opa https://github.com/open-policy-agent/opa/releases/download/v0.15.1/opa_linux_amd64
+            wget -O opa https://github.com/open-policy-agent/opa/releases/download/v0.25.2/opa_linux_amd64
             chmod +x opa
             sudo mkdir -p /usr/local/bin
             sudo mv opa /usr/local/bin
       - run:
           name: conftest-install
           command: |
-            wget https://github.com/instrumenta/conftest/releases/download/v0.17.1/conftest_0.17.1_Linux_x86_64.tar.gz
-            tar xzf conftest_0.17.1_Linux_x86_64.tar.gz
+            wget https://github.com/open-policy-agent/conftest/releases/download/v0.24.0/conftest_0.24.0_Linux_x86_64.tar.gz
+            tar xzf conftest_0.24.0_Linux_x86_64.tar.gz
             sudo mv conftest /usr/local/bin
-            rm conftest_0.17.1_Linux_x86_64.tar.gz
+            rm conftest_0.24.0_Linux_x86_64.tar.gz
       - run:
           name: conftest-pull
           command: |
-            conftest pull -p policy/ github.com/fugue/regula/conftest
-            conftest pull -p policy/regula/lib 'github.com/fugue/regula//lib?ref=v0.5.0'
-            conftest pull -p policy/regula/rules github.com/fugue/regula/rules
+            conftest pull -p policy/ 'github.com/fugue/regula//conftest?ref=v0.8.0'
+            conftest pull -p policy/regula/lib 'github.com/fugue/regula//lib?ref=v0.8.0'
+            conftest pull -p policy/regula/rules 'github.com/fugue/regula//rules?ref=v0.8.0'
       - run:
           name: regula-check
           command: |
